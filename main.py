@@ -1,7 +1,5 @@
 import random
 import subprocess
-import time
-from subprocess import Popen
 
 import requests
 
@@ -37,9 +35,7 @@ run_container = subprocess.run(
     shell=True,
 )
 subprocess.run(
-    "docker cp /Users/yanki/Desktop/docker-dynamic/entrypoint.sh {}:/entrypoint.sh".format(
-        name
-    ),
+    "docker cp ./entrypoint.sh {}:/entrypoint.sh".format(name),
     stdout=subprocess.PIPE,
     shell=True,
 )
