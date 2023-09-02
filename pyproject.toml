@@ -9,7 +9,6 @@ packages = [{include = "docker_dynamic"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 requests = "^2.31.0"
-docker = "^6.1.3"
 
 
 [build-system]
