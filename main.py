@@ -1,5 +1,7 @@
 import random
+import signal
 import subprocess
+import sys
 
 import requests
 
@@ -17,36 +19,34 @@ all_tags = []
 for result in tags_response["results"]:
     all_tags.append(result["name"])
 tag = random.choice(all_tags)
-name = "test-{}-{}".format(base_image, tag)
+# Container name, ex. test-alpine-3.12.0
+container_name = "test-{}-{}".format(base_image, tag)
 print("Building image with base image: {} and tag: {}".format(base_image, tag))
 build_command = "docker build -q --build-arg base_image={}:{} .".format(base_image, tag)
-
-
 build_container = subprocess.run(build_command, shell=True, stdout=subprocess.PIPE)
-print("> " + build_command)
 print("Running container...")
 
 run_command = "docker run --rm -p 80:80 -it -d --name {} {}".format(
-    name, build_container.stdout.decode("utf-8").strip()
+    container_name, build_container.stdout.decode("utf-8").strip()
 )
-
-run_container = subprocess.run(
+# Run container
+subprocess.run(
     run_command,
     shell=True,
 )
+# Copy entrypoint script into container
 subprocess.run(
-    "docker cp ./entrypoint.sh {}:/entrypoint.sh".format(name),
+    "docker cp ./entrypoint.sh {}:/entrypoint.sh".format(container_name),
     stdout=subprocess.PIPE,
     shell=True,
 )
-# res = subprocess.run("docker exec -it {} sh".format(name), shell=True)
-# print(res)
+# Make entrypoint script executable and run it
 subprocess.run(
     'docker exec -it {} sh -c "chmod +x ./entrypoint.sh && ./entrypoint.sh"'.format(
-        name
+        container_name
     ),
     stdout=subprocess.PIPE,
     shell=True,
 )
-
-res = subprocess.run("docker exec -it {} sh".format(name), shell=True)
+# Open shell in container
+res = subprocess.run("docker exec -it {} sh".format(container_name), shell=True)
