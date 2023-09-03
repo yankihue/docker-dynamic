@@ -1,7 +1,5 @@
 import random
-import signal
 import subprocess
-import sys
 
 import requests
 
@@ -10,9 +8,7 @@ base_images = [
 ]  # only leave alpine here to quickly test script
 base_image = random.choice(base_images)
 # Get all tags for randomly selected base image from docker hub API
-url = "https://hub.docker.com/v2/namespaces/library/repositories/{}/tags?page_size=100".format(
-    base_image
-)
+url = f"https://hub.docker.com/v2/namespaces/library/repositories/{base_image}/tags?page_size=100"
 # TODO: Iterate through all pages for all tags
 tags_response = requests.get(url).json()
 all_tags = []
@@ -20,33 +16,30 @@ for result in tags_response["results"]:
     all_tags.append(result["name"])
 tag = random.choice(all_tags)
 # Container name, ex. test-alpine-3.12.0
-container_name = "test-{}-{}".format(base_image, tag)
-print("Building image with base image: {} and tag: {}".format(base_image, tag))
-build_command = "docker build -q --build-arg base_image={}:{} .".format(base_image, tag)
+container_name = f"test-{base_image}-{tag}"
+print(f"Building image with base image: {base_image} and tag: {tag}")
+build_command = f"docker build -q --build-arg base_image={base_image}:{tag} ."
 build_container = subprocess.run(build_command, shell=True, stdout=subprocess.PIPE)
-print("Running container...")
+print(f"Running container {container_name}...")
 
-run_command = "docker run --rm -p 80:80 -it -d --name {} {}".format(
-    container_name, build_container.stdout.decode("utf-8").strip()
-)
+run_command = f"docker run --rm -p 80:80 -it -d --name {container_name} { build_container.stdout.decode('utf-8').strip()}"
 # Run container
-subprocess.run(
+container_process = subprocess.run(
     run_command,
     shell=True,
 )
 # Copy entrypoint script into container
 subprocess.run(
-    "docker cp ./entrypoint.sh {}:/entrypoint.sh".format(container_name),
+    f"docker cp ./entrypoint.sh {container_name}:/entrypoint.sh",
     stdout=subprocess.PIPE,
     shell=True,
 )
+
 # Make entrypoint script executable and run it
 subprocess.run(
-    'docker exec -it {} sh -c "chmod +x ./entrypoint.sh && ./entrypoint.sh"'.format(
-        container_name
-    ),
+    f'docker exec -it {container_name} sh -c "chmod +x ./entrypoint.sh && ./entrypoint.sh"',
     stdout=subprocess.PIPE,
     shell=True,
 )
 # Open shell in container
-res = subprocess.run("docker exec -it {} sh".format(container_name), shell=True)
+res = subprocess.run(f"docker exec -it {container_name} sh", shell=True)
